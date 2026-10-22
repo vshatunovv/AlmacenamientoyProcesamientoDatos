@@ -1,0 +1,40 @@
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: .docker/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - /workspace/node_modules
+    env_file:
+      - path: ../.envs/aws.env
+        required: false  # solo se necesita desde el Lab 2
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/paytrack
+    depends_on:
+      - postgres
+    command: sleep infinity
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: paytrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@paytrack.co
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
