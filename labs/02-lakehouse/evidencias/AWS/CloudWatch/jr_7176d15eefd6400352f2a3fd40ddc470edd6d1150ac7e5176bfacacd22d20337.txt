@@ -1,0 +1,5 @@
+﻿Ô£ô silver.transactions existe (corre antes el batch del lote 1)
+Modo en vivo: micro-lotes cada 10 s durante 300 s
+
+/usr/lib/spark/python/lib/pyspark.zip/pyspark/sql/dataframe.py:147: UserWarning: DataFrame constructor is internal. Do not directly use it.
+

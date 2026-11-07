@@ -58,3 +58,10 @@ lakehouse-local/
 # Logs
 *.log
 logs/
+
+# Lab 2: entorno aislado y scripts auxiliares
+/lakehouse-evidencias/
+/labs/02-lakehouse/run_local_evidencias.sh
+
+# Permitir CSV de evidencias del Lab 2
+!labs/02-lakehouse/evidencias/**/*.csv

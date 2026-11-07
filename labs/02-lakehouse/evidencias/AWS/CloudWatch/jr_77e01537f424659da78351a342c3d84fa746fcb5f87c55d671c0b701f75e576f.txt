@@ -1,0 +1,24 @@
+﻿Ô£ô daily: una fila por d├¡a y comercio
+
+Ô£ô daily: cuadra el n├║mero de transacciones con silver
+
+Ô£ô daily: cuadra el monto aprobado
+
+Ô£ô daily: cuadra el monto en contracargos
+
+Ô£ô daily: particiones bien formadas
+
+Ô£ô weekly: una fila por semana, patr├│n y segmento
+
+Ô£ô weekly: cuadra el n├║mero de eventos
+
+Ô£ô weekly: las semanas empiezan en lunes
+
+Ô£ô hourly: 24 horas
+
+Ô£ô hourly: cuadra con las aprobadas de silver
+
+Gold listo
+
+Running autoDebugger shutdown hook.
+

@@ -1,0 +1,28 @@
+﻿Ô£ô transactions: tiene las columnas de auditor├¡a
+
+Ô£ô transactions: el lote 2026-09-30 tiene 2316 filas (sin duplicar)
+
+Ô£ô transactions: source_file apunta al archivo del lote
+
+Ô£ô fraud_events: tiene las columnas de auditor├¡a
+
+Ô£ô fraud_events: el lote 2026-09-30 tiene 5 filas (sin duplicar)
+
+Ô£ô fraud_events: source_file apunta al archivo del lote
+
+Ô£ô customers: tiene las columnas de auditor├¡a
+
+Ô£ô customers: el lote 2026-09-30 tiene 500 filas (sin duplicar)
+
+Ô£ô customers: source_file apunta al archivo del lote
+
+Ô£ô merchants: tiene las columnas de auditor├¡a
+
+Ô£ô merchants: el lote 2026-09-30 tiene 8 filas (sin duplicar)
+
+Ô£ô merchants: source_file apunta al archivo del lote
+
+Bronze listo para el lote 2026-09-30
+
+Running autoDebugger shutdown hook.
+

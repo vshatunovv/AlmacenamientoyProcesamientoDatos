@@ -1,0 +1,74 @@
+﻿Ô£ô silver.transactions existe (corre antes el batch del lote 1)
+Modo en vivo: micro-lotes cada 10 s durante 300 s
+
+/usr/lib/spark/python/lib/pyspark.zip/pyspark/sql/dataframe.py:147: UserWarning: DataFrame constructor is internal. Do not directly use it.
+
+Kinesis: columnas recibidas: ['event_id', 'event_type', 'event_time', 'transaction_id', 'customer_id', 'merchant_id', 'merchant_name', 'merchant_category', 'amount_cop', 'payment_method', 'status', 'is_fraud', 'timestamp', 'city', '$add$record_timestamp$_temporary$']
+AVISO: Kinesis no expuso __src_timestamp. Se usara la hora de procesamiento como arrival_ts.
+
+Ô£ô la consulta bronze est├í corriendo
+
+Ô£ô la consulta bronze est├í corriendo
+
+Ô£ô la consulta bronze est├í corriendo
+
+Ô£ô la consulta bronze est├í corriendo
+
+Ô£ô la consulta bronze est├í corriendo
+
+Ô£ô la consulta bronze est├í corriendo
+
+Ô£ô la consulta bronze est├í corriendo
+
+Ô£ô la consulta bronze est├í corriendo
+
+  bronze   micro-lotes:  32 ┬À filas le├¡das:   4912 ┬À descartadas por watermark: 0
+
+  silver   micro-lotes:  26 ┬À filas le├¡das:   4912 ┬À descartadas por watermark: 0
+
+  metrics  micro-lotes:  29 ┬À filas le├¡das:   4912 ┬À descartadas por watermark: 0
+
+
+  alerts   micro-lotes:  29 ┬À filas le├¡das:   4912 ┬À descartadas por watermark: 0
+
+  silver   micro-lotes:   1 ┬À filas le├¡das:      0 ┬À descartadas por watermark: 0
+
+  metrics  micro-lotes:   1 ┬À filas le├¡das:      0 ┬À descartadas por watermark: 0
+
+  alerts   micro-lotes:   1 ┬À filas le├¡das:      0 ┬À descartadas por watermark: 0
+
+Ô£ô bronze.transaction_events: 4912 eventos
+
+Ô£ô bronze: el esquema parsea todos los campos (sin NULL inesperados)
+
+Ô£ô deduplicate_events: deja un evento por event_id
+
+Ô£ô latest_per_transaction: una fila por transaction_id
+
+Ô£ô silver: sin transaction_id duplicados
+
+Ô£ô silver: llegaron todas las transacciones del stream (tambi├®n las tard├¡as)
+
+Ô£ô silver: cada transacci├│n qued├│ con el status de su ├║ltimo evento
+
+Ô£ô silver: ning├║n contracargo fue revertido por un reenv├¡o
+
+Ô£ô metrics: 61 ventanas emitidas
+
+Ô£ô metrics: una fila por ventana y comercio
+
+Ô£ô metrics: ventanas de 1 minuto
+
+Ô£ô metrics: no cuenta pagos repetidos
+
+Ô£ô metrics: tasas y montos en rango
+
+Ô£ô alerts: una fila por ventana y cliente
+
+Ô£ô alerts: todas tienen 6 o m├ís pagos
+
+Ô£ô alerts: ventanas de 30 segundos
+
+
+Stream listo: 34758 transacciones en silver, 61 ventanas de m├®tricas, 17 alertas
+

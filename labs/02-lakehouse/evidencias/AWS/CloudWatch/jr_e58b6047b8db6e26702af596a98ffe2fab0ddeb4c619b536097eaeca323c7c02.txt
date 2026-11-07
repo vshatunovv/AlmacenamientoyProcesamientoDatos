@@ -1,0 +1,20 @@
+﻿Ô£ô silver.transactions: tipos correctos
+
+Ô£ô lote: v├ílidas + cuarentena = transacciones distintas del lote (no se perdi├│ nada)
+
+Ô£ô cuarentena: cada fila tiene un dq_reason v├ílido
+
+Ô£ô silver: sin transaction_id duplicados
+
+Ô£ô silver: se insertaron las 0 transacciones nuevas
+
+Ô£ô silver: el status de cada transacci├│n del lote qued├│ actualizado
+
+Ô£ô silver: todas las filas cumplen las reglas de calidad
+
+Ô£ô silver.customers: sin nombres y con emails enmascarados
+
+Silver listo para el lote 2026-09-30
+
+Running autoDebugger shutdown hook.
+

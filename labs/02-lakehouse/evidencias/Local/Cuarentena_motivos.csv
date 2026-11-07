@@ -1,0 +1,5 @@
+﻿ingest_date,dq_reason,filas
+2026-09-29,invalid_amount,1176
+2026-09-29,missing_customer,594
+2026-09-30,invalid_amount,78
+2026-09-30,missing_customer,40

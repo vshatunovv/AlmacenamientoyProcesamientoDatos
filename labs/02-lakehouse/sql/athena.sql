@@ -1,0 +1,221 @@
+-- ============================================================
+-- Consumo: consultas Athena sobre las tablas Delta del lakehouse
+--
+-- Ejecútalas en la consola de Athena con el workgroup paytrack-lakehouse-wg.
+-- Reemplaza <BUCKET> por el nombre de tu bucket (salida del deploy).
+-- Anota los MB escaneados de cada consulta (pestaña "Query stats").
+-- ============================================================
+
+-- ── Dado: registrar las tablas Delta en el catálogo ─────────
+-- Athena lee el esquema y las particiones directamente del _delta_log.
+CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.silver_transactions
+LOCATION 's3://<BUCKET>/lakehouse/silver/transactions/'
+TBLPROPERTIES ('table_type' = 'DELTA');
+
+CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_daily_merchant_summary
+LOCATION 's3://<BUCKET>/lakehouse/gold/daily_merchant_summary/'
+TBLPROPERTIES ('table_type' = 'DELTA');
+
+CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_fraud_weekly_report
+LOCATION 's3://<BUCKET>/lakehouse/gold/fraud_weekly_report/'
+TBLPROPERTIES ('table_type' = 'DELTA');
+
+CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_hourly_volume
+LOCATION 's3://<BUCKET>/lakehouse/gold/hourly_volume/'
+TBLPROPERTIES ('table_type' = 'DELTA');
+
+CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_status_changes
+LOCATION 's3://<BUCKET>/lakehouse/gold/status_changes/'
+TBLPROPERTIES ('table_type' = 'DELTA');
+
+-- Tablas del streaming (parte B)
+CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_merchant_minute_metrics
+LOCATION 's3://<BUCKET>/lakehouse/gold/merchant_minute_metrics/'
+TBLPROPERTIES ('table_type' = 'DELTA');
+
+CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.gold_fraud_alerts
+LOCATION 's3://<BUCKET>/lakehouse/gold/fraud_alerts/'
+TBLPROPERTIES ('table_type' = 'DELTA');
+
+CREATE EXTERNAL TABLE IF NOT EXISTS paytrack_lakehouse.bronze_transaction_events
+LOCATION 's3://<BUCKET>/lakehouse/bronze/transaction_events/'
+TBLPROPERTIES ('table_type' = 'DELTA');
+
+-- ── TODO 1 ──────────────────────────────────────────────────
+-- Los 5 comercios con mayor monto aprobado en septiembre de 2026 y su tasa
+-- de aprobación del mes, usando gold_daily_merchant_summary.
+-- Ojo: no promedies approval_rate_pct diaria; calcula la del mes.
+-- Filtra por las columnas de partición.
+
+WITH resumen_mensual AS (
+    SELECT
+        merchant_id,
+        merchant_name,
+        merchant_category,
+        SUM(approved_cop) AS monto_aprobado_cop,
+        ROUND(
+            SUM(CAST(approval_rate_pct AS DOUBLE) * num_transactions)
+            / NULLIF(SUM(num_transactions), 0),
+            2
+        ) AS tasa_aprobacion_pct
+    FROM paytrack_lakehouse.gold_daily_merchant_summary
+    WHERE year = '2026' AND month = '09'
+    GROUP BY merchant_id, merchant_name, merchant_category
+)
+SELECT
+    merchant_id,
+    merchant_name,
+    merchant_category,
+    monto_aprobado_cop,
+    tasa_aprobacion_pct
+FROM resumen_mensual
+ORDER BY monto_aprobado_cop DESC, merchant_id
+LIMIT 5;
+
+-- ── TODO 2 ──────────────────────────────────────────────────
+-- La misma pregunta del TODO 1, pero calculada desde silver_transactions.
+-- Compara resultados y MB escaneados con el TODO 1.
+
+SELECT
+    merchant_id,
+    merchant_name,
+    merchant_category,
+    SUM(CASE WHEN status = 'approved'
+             THEN amount_cop ELSE DECIMAL '0.00' END) AS monto_aprobado_cop,
+    ROUND(
+        100.0 * SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END)
+        / NULLIF(COUNT(*), 0),
+        2
+    ) AS tasa_aprobacion_pct
+FROM paytrack_lakehouse.silver_transactions
+WHERE year = '2026' AND month = '09'
+GROUP BY merchant_id, merchant_name, merchant_category
+ORDER BY monto_aprobado_cop DESC, merchant_id
+LIMIT 5;
+
+-- ── TODO 3 ──────────────────────────────────────────────────
+-- Para cada segmento de cliente: la semana con más eventos de fraude y
+-- cuántos eventos tuvo (gold_fraud_weekly_report).
+-- Pista: funciones de ventana (ROW_NUMBER ... OVER (PARTITION BY ...)).
+
+WITH fraude_semanal AS (
+    SELECT segment, week_start, SUM(num_events) AS num_events
+    FROM paytrack_lakehouse.gold_fraud_weekly_report
+    GROUP BY segment, week_start
+), ranking AS (
+    SELECT
+        segment,
+        week_start,
+        num_events,
+        ROW_NUMBER() OVER (
+            PARTITION BY segment
+            ORDER BY num_events DESC, week_start ASC
+        ) AS rn
+    FROM fraude_semanal
+)
+SELECT segment, week_start, num_events
+FROM ranking
+WHERE rn = 1
+ORDER BY segment;
+
+-- ── TODO 4 ──────────────────────────────────────────────────
+-- Impacto de los contracargos del último lote: número de transacciones y
+-- monto revertido por categoría de comercio (gold_status_changes + silver_transactions).
+
+SELECT
+    t.merchant_category,
+    COUNT(DISTINCT c.transaction_id) AS num_contracargos,
+    SUM(c.amount_cop) AS monto_revertido_cop
+FROM paytrack_lakehouse.gold_status_changes AS c
+JOIN paytrack_lakehouse.silver_transactions AS t
+    ON c.transaction_id = t.transaction_id
+WHERE c.old_status = 'approved'
+  AND c.new_status = 'chargeback'
+GROUP BY t.merchant_category
+ORDER BY monto_revertido_cop DESC, t.merchant_category;
+
+-- ── TODO 5 (streaming) ──────────────────────────────────────
+-- Precisión de las alertas de ráfagas: de las alertas de gold_fraud_alerts,
+-- ¿qué porcentaje corresponde a clientes que de verdad cometieron fraude en
+-- esa ventana? Una alerta es un acierto si alguno de los pagos del cliente con
+-- event_time dentro de [window_start, window_end) tiene is_fraud = true
+-- (bronze_transaction_events). Reporta alertas, aciertos y % de precisión.
+
+-- Evaluar las alertas contra los pagos fraudulentos reales.
+
+WITH alertas_evaluadas AS (
+    SELECT
+        a.window_start,
+        a.window_end,
+        a.customer_id,
+        MAX(
+            CASE
+                WHEN b.is_fraud = TRUE THEN 1
+                ELSE 0
+            END
+        ) AS acierto
+    FROM paytrack_lakehouse.gold_fraud_alerts AS a
+    LEFT JOIN paytrack_lakehouse.bronze_transaction_events AS b
+        ON a.customer_id = b.customer_id
+        AND b.event_type = 'payment'
+        AND b.event_time >= a.window_start
+        AND b.event_time < a.window_end
+    GROUP BY
+        a.window_start,
+        a.window_end,
+        a.customer_id
+)
+SELECT
+    COUNT(*) AS total_alertas,
+    SUM(acierto) AS alertas_correctas,
+    ROUND(
+        100.0 * SUM(acierto) / NULLIF(COUNT(*), 0),
+        2
+    ) AS precision_pct
+FROM alertas_evaluadas;
+
+
+
+-- ── TODO 6 (streaming) ──────────────────────────────────────
+-- Capa rápida vs. capa batch: para cada día que cubre el streaming, compara el
+-- número de pagos por comercio según gold_merchant_minute_metrics (suma de las
+-- ventanas) con el número de transacciones del stream en silver_transactions
+-- (las que tienen transaction_id con prefijo 'TXNS'). Muestra la diferencia.
+-- ¿De dónde sale? (pista: watermark y ventanas que aún no se cierran)
+
+
+-- Comparar pagos de ventanas Gold contra transacciones del stream en Silver.
+
+WITH metricas AS (
+    SELECT
+        CAST(window_start AS DATE) AS fecha,
+        merchant_id,
+        SUM(num_payments) AS pagos_metricas
+    FROM paytrack_lakehouse.gold_merchant_minute_metrics
+    GROUP BY
+        CAST(window_start AS DATE),
+        merchant_id
+),
+silver_stream AS (
+    SELECT
+        CAST(event_ts AS DATE) AS fecha,
+        merchant_id,
+        COUNT(*) AS pagos_silver
+    FROM paytrack_lakehouse.silver_transactions
+    WHERE transaction_id LIKE 'TXNS%'
+    GROUP BY
+        CAST(event_ts AS DATE),
+        merchant_id
+)
+SELECT
+    COALESCE(m.fecha, s.fecha) AS fecha,
+    COALESCE(m.merchant_id, s.merchant_id) AS merchant_id,
+    COALESCE(m.pagos_metricas, 0) AS pagos_metricas,
+    COALESCE(s.pagos_silver, 0) AS pagos_silver,
+    COALESCE(m.pagos_metricas, 0)
+        - COALESCE(s.pagos_silver, 0) AS diferencia
+FROM metricas AS m
+FULL OUTER JOIN silver_stream AS s
+    ON m.fecha = s.fecha
+    AND m.merchant_id = s.merchant_id
+ORDER BY fecha, merchant_id;

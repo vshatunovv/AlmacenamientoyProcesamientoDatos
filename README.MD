@@ -19,10 +19,16 @@ Incluye:
 
 [Ver Laboratorio 1](labs/01-modelado/)
 
-## Laboratorio 2
+## Laboratorio 2 - Lakehouse Batch y Streaming
 
-Pendiente de desarrollo.
+Implementacion de un lakehouse para PayTrack utilizando
+AWS S3, Glue, Delta Lake, Athena, Kinesis y Apache Kafka.
 
+Se desarrollaron pipelines Batch y Streaming con
+arquitectura Medallion, controles de calidad, auditoria,
+deduplicacion y deteccion de posibles fraudes.
+
+**[Ver la entrega completa del Laboratorio 2](labs/02-lakehouse/ENTREGA.md)**
 ## Referencia
 
 Material base del curso: [big-data-labs-2026-2](https://github.com/asacrea/big-data-labs-2026-2), proporcionado por Andres Sacre Alzate.

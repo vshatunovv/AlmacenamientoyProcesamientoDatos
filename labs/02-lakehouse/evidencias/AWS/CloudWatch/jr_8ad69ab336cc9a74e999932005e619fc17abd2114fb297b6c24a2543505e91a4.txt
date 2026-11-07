@@ -1,0 +1,30 @@
+﻿+-------+-------------------+---------+--------------------------------------------------------------------------------+
+|version|          timestamp|operation|                                                                operationMetrics|
++-------+-------------------+---------+--------------------------------------------------------------------------------+
+|      3|2026-11-04 07:21:39|    MERGE|{numTargetRowsCopied -> 30113, numTargetRowsDeleted -> 0, numTargetFilesAdded...|
+|      2|2026-11-04 06:51:56|    MERGE|{numTargetRowsCopied -> 27955, numTargetRowsDeleted -> 0, numTargetFilesAdded...|
+|      1|2026-11-04 06:34:49|    MERGE|{numTargetRowsCopied -> 0, numTargetRowsDeleted -> 0, numTargetFilesAdded -> ...|
+|      0|2026-11-04 06:34:41|    WRITE|                        {numFiles -> 0, numOutputRows -> 0, numOutputBytes -> 0}|
++-------+-------------------+---------+--------------------------------------------------------------------------------+
+
+
+Versi├│n 3: 0 insertadas, 0 actualizadas
+
++----------+----------+-------------+---------+
+|old_status|new_status|transacciones|monto_cop|
++----------+----------+-------------+---------+
++----------+----------+-------------+---------+
+
+
+Ô£ô status_changes: columnas correctas
+
+Ô£ô status_changes: coincide con las filas que actualiz├│ el MERGE
+
+Ô£ô status_changes: solo cambios reales
+
+Ô£ô las versiones difieren exactamente en las filas insertadas por el MERGE
+
+Auditor├¡a lista
+
+Running autoDebugger shutdown hook.
+
